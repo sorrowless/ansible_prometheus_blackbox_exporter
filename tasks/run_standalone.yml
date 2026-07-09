@@ -2,7 +2,7 @@
 - name: Exporters | blackbox exporter | Get blackbox exporter
   become: true
   become_user: root
-  get_url:
+  ansible.builtin.get_url:
     url: "https://github.com/prometheus/blackbox_exporter/releases/download/v{{ blackbox_exporter_version }}/blackbox_exporter-{{ blackbox_exporter_version }}.{{ blackbox_exporter_arch }}.tar.gz"
     dest: "{{ blackbox_exporter_config_dir }}/sources/blackbox_exporter-{{ blackbox_exporter_version }}.{{ blackbox_exporter_arch }}.tar.gz"
     mode: 0644
@@ -12,8 +12,8 @@
 - name: Exporters | blackbox exporter | Unzip blackbox exporter
   become: true
   become_user: root
-  unarchive:
-    remote_src: yes
+  ansible.builtin.unarchive:
+    remote_src: true
     src: "{{ blackbox_exporter_config_dir }}/sources/blackbox_exporter-{{ blackbox_exporter_version }}.{{ blackbox_exporter_arch }}.tar.gz"
     dest: "{{ blackbox_exporter_config_dir }}/sources/"
     creates: "{{ blackbox_exporter_config_dir }}/sources/blackbox_exporter-{{ blackbox_exporter_version }}.{{ blackbox_exporter_arch }}/blackbox_exporter"
@@ -21,8 +21,8 @@
 - name: Exporters | blackbox exporter | Copy exporter to PATH
   become: true
   become_user: root
-  copy:
-    remote_src: yes
+  ansible.builtin.copy:
+    remote_src: true
     src: "{{ blackbox_exporter_config_dir }}/sources/blackbox_exporter-{{ blackbox_exporter_version }}.{{ blackbox_exporter_arch }}/blackbox_exporter"
     dest: /usr/local/bin/blackbox_exporter
     mode: 0755
@@ -31,16 +31,23 @@
   notify:
     - Restart blackbox exporter
 
+- name: Exporters | blackbox exporter | Create blackbox exporter group
+  ansible.builtin.group:
+    name: "{{ blackbox_exporter_user }}"
+    gid: "{{ blackbox_exporter_gid }}"
+
 - name: Exporters | blackbox exporter | Create blackbox exporter user
-  user:
+  ansible.builtin.user:
     name: "{{ blackbox_exporter_user }}"
     comment: "blackbox exporter user"
+    uid: "{{ blackbox_exporter_uid }}"
+    group: "{{ blackbox_exporter_gid }}"
     shell: /usr/sbin/nologin
 
 - name: Exporters | blackbox exporter | Ensure blackbox exporter systemd unit
   become: true
   become_user: root
-  template:
+  ansible.builtin.template:
     src: systemd.service.j2
     dest: "/etc/systemd/system/blackbox-exporter.service"
     owner: root
@@ -53,10 +60,10 @@
 - name: Exporters | blackbox exporter | Enable systemd service
   become: true
   become_user: root
-  systemd:
+  ansible.builtin.systemd:
     name: "blackbox-exporter.service"
-    enabled: yes
-    daemon_reload: yes
+    enabled: true
+    daemon_reload: true
     state: started
   when:
     - systemd_unitfile.changed

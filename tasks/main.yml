@@ -1,8 +1,8 @@
 ---
 - name: Ensure config dir
-  become: yes
+  become: true
   become_user: root
-  file:
+  ansible.builtin.file:
     path: "{{ item }}"
     state: directory
     mode: 0755
@@ -14,7 +14,7 @@
   when: blackbox_swarm_manager is undefined
 
 - name: Copy blackbox config file
-  template:
+  ansible.builtin.template:
     src: config.yml.j2
     dest: "{{ blackbox_exporter_config_dir }}/config.yml"
     mode: 0644
@@ -25,9 +25,9 @@
   when: blackbox_swarm_manager is undefined
 
 - name: Include docker-related tasks
-  include_tasks: run_in_docker.yml
+  ansible.builtin.include_tasks: run_in_docker.yml
   when: blackbox_exporter_run_in_docker
 
 - name: Include standalone tasks
-  include_tasks: run_standalone.yml
+  ansible.builtin.include_tasks: run_standalone.yml
   when: not blackbox_exporter_run_in_docker

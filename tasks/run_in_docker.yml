@@ -1,7 +1,7 @@
 ---
 - name: Exporters | blackbox exporter | Check network_mode value
-  assert:
-    that: 
+  ansible.builtin.assert:
+    that:
       - blackbox_exporter_network_mode in ['none', 'host']
         or blackbox_exporter_network_mode is search('^container:.+')
         or blackbox_exporter_network_mode is search('^service:.+')
@@ -19,12 +19,12 @@
 - name: Exporters | blackbox exporter | Deploy blackbox_exporter to docker swarm
   block:
     - name: Ensure pip installation
-      package:
+      ansible.builtin.package:
         name: "python3-pip"
         state: present
 
     - name: Install newer version of pip itself
-      pip:
+      ansible.builtin.pip:
         name: "pip"
         state: latest
         executable: pip3
@@ -33,7 +33,7 @@
         - ansible_distribution_major_version != 24
 
     - name: Install jsondiff from pip
-      pip:
+      ansible.builtin.pip:
         name: "jsondiff"
         state: present
         executable: pip3
@@ -42,7 +42,7 @@
         - ansible_distribution_major_version != 24
 
     - name: Ensure jsondiff
-      package:
+      ansible.builtin.package:
         name: "python3-jsondiff"
         state: present
       when:
@@ -50,7 +50,7 @@
         - ansible_distribution_major_version == 24
 
     - name: Add modules to config
-      set_fact:
+      ansible.builtin.set_fact:
         blackbox_exporter_config:
           modules: "{{ blackbox_exporter_config }}"
 
@@ -59,7 +59,7 @@
         name: blackbox_exporter_config_{{ item }}
         data: "{{ blackbox_exporter_config | to_nice_yaml }}"
         state: present
-      ignore_errors: True
+      ignore_errors: true
       register: created_configs
       loop:
         - "0"
@@ -69,10 +69,9 @@
       community.docker.docker_stack:
         state: present
         name: "{{ blackbox_exporter_stack_name }}"
-        with_registry_auth: yes
+        with_registry_auth: true
         compose:
-          - version: '3.5'
-            services:
+          - services:
               blackbox_exporter:
                 image: "{{ blackbox_exporter_docker_image }}"
                 command: "{{ blackbox_exporter_command }}"
@@ -84,6 +83,7 @@
                 ports:
                   - "{{ blackbox_exporter_host_port }}:{{ blackbox_exporter_host_port }}"
                 deploy: "{{ blackbox_exporter_swarm_deploy }}"
+                user: "{{ blackbox_exporter_uid }}:{{ blackbox_exporter_gid }}"
             networks:
               default:
                 external:
@@ -106,10 +106,10 @@
       community.docker.docker_config:
         name: blackbox_exporter_config_{{ item }}
         state: absent
-      ignore_errors: True
+      ignore_errors: true
       loop:
         - "0"
         - "1"
-  delegate_to: "{{ blackbox_swarm_manager }}"
+  delegate_to: "{{ blackbox_swarm_manager | default(omit) }}"
   when: blackbox_swarm_manager is defined
-  run_once: True
+  run_once: true

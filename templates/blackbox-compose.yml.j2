@@ -11,6 +11,7 @@ services:
       - "{{ blackbox_exporter_config_dir }}:/config"
     hostname: "{{ ansible_host }}"
     restart: always
+    user: "{{ blackbox_exporter_uid }}:{{ blackbox_exporter_gid }}"
     labels:
 {% for key, value in blackbox_exporter_docker_labels.items() %}
       {{ key }}: "{{ value }}"
